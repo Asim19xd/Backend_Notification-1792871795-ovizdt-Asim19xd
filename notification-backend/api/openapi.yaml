@@ -1,0 +1,164 @@
+openapi: 3.1.0
+info:
+  title: Financial Notification Platform API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /v1/events:
+    post:
+      summary: Publish a financial notification event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationEvent"
+      responses:
+        "202": {"description": "Event accepted"}
+        "400": {"description": "Invalid event"}
+
+  /v1/preferences:
+    post:
+      summary: Create or update user notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPreferences"
+      responses:
+        "200": {"description": "Preferences saved"}
+
+  /v1/preferences/{user_id}:
+    get:
+      summary: Get user preferences
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200": {"description": "User preferences"}
+        "404": {"description": "Not found"}
+
+  /v1/notifications/{notification_id}:
+    get:
+      summary: Get notification delivery status
+      parameters:
+        - in: path
+          name: notification_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200": {"description": "Notification status"}
+
+  /v1/delivery-status:
+    post:
+      summary: Receive provider delivery webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryStatus"
+      responses:
+        "202": {"description": "Status accepted"}
+
+  /v1/analytics/summary:
+    get:
+      summary: Get real-time notification analytics
+      responses:
+        "200": {"description": "Analytics summary"}
+
+components:
+  schemas:
+    NotificationEvent:
+      type: object
+      required: [event_type, user_id, payload]
+      properties:
+        event_type:
+          type: string
+          enum:
+            - transaction_alert
+            - transaction_failure
+            - margin_call
+            - sip_reminder
+            - sip_installment_due
+            - price_alert
+            - price_alert_triggered
+            - kyc_status
+            - regulatory_notice
+            - tax_statement_ready
+            - dividend_credit
+            - corporate_action
+            - loan_disbursement
+            - loan_emi_due
+            - loan_emi_overdue
+            - credit_card_statement
+            - credit_card_payment_due
+            - fixed_deposit_maturity
+            - mutual_fund_purchase
+            - mutual_fund_redemption
+            - portfolio_summary
+            - security_alert
+            - password_change
+            - login_from_new_device
+            - upi_transaction
+            - upi_failure
+            - refund_processed
+            - account_statement_ready
+        user_id:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        correlation_id:
+          type: string
+        preferred_language:
+          type: string
+          default: en-IN
+
+    UserPreferences:
+      type: object
+      required: [user_id]
+      properties:
+        user_id:
+          type: string
+        channels:
+          type: object
+          additionalProperties:
+            type: boolean
+        category_opt_outs:
+          type: array
+          items:
+            type: string
+        quiet_hours_start:
+          type: string
+        quiet_hours_end:
+          type: string
+        timezone:
+          type: string
+        daily_limit:
+          type: integer
+        dnd_enabled:
+          type: boolean
+
+    DeliveryStatus:
+      type: object
+      required: [notification_id, channel, status]
+      properties:
+        notification_id:
+          type: string
+        channel:
+          type: string
+          enum: [sms, email, push, whatsapp, in_app]
+        status:
+          type: string
+          enum: [queued, sent, delivered, failed, read]
+        provider_message_id:
+          type: string
+        error_code:
+          type: string
